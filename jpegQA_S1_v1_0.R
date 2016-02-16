@@ -33,7 +33,7 @@ library(maptools)
 ## Directories
 wkdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\clouds"
 imdir <- "W:\\usgs\\113075"
-shpdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\clouds\\QAshapes"
+shpdir <- paste0(wkdir, "\\", "QAshapes")
 # This directory could change needs to be cleaned - grows quickly
 tmpdir <- "C:\\Users\\barth\\AppData\\Local\\Temp\\RtmpiqxKEG\\raster"
 # Buffer
@@ -54,7 +54,7 @@ result <- allfiles[grepl("*pre.ers", allfiles)]
 # get only image date folders file paths
 result <- result[!grepl("ecw*", result)]#remove display folder
 ## limit to just few folders for testing
-result <- result[1:5]
+#result <- result[1:5]
 #get just folders
 fold <- substr(result, 1, 8)
 

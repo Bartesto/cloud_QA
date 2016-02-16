@@ -16,7 +16,9 @@
 # The proceedure from this point is to use Windows Explorer and the extra large
 # icon view to asses each jpeg for cloud. Any jpeg with cloud can be deleted 
 # from this folder. Remaining cloud free jpegs will then be used for Stage 2 of 
-# the jpeg query process. 
+# the jpeg query process.
+#
+# Bart Huntley
 
 
 rm(list=ls())

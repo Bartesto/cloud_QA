@@ -90,7 +90,7 @@ for(i in 1:length(shpnames)){
     bb <- raster(f, band = blue)
     bb <- crop(bb, ext)
     b <- brick(br, bg, bb)
-    jpeg(filename = fname)
+    jpeg(filename = fname, width = 842, height = 870)
     plotRGB(b, 1, 2, 3, axes = FALSE) 
     plot(shp, add = TRUE, lwd = 1, border = "green")
     dev.off()

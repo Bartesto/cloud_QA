@@ -40,7 +40,7 @@ library(sp)
 ## Directories
 wkdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\clouds"
 imdir <- "W:\\usgs\\113075"
-shpdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\clouds\\QAshapes"
+shpdir <- paste0(wkdir, "\\", "QAshapes")
 zone <- 50
 shp.ID <- "Bore"
 option <- "i35"
@@ -66,20 +66,34 @@ directories <- list.dirs()
 qind <- grep("QA_jpegs", directories)
 directories <- directories[qind]
 
+#################Get full list of image folders#################################
+setwd(wkdir)
+
+
+allimfolds <- list.dirs(imdir)
+allimfolds <- as.Date(allimfolds, "%Y%m%d")
+allimfolds <- allimfolds[!is.na(allimfolds)]
+
+beg <- gsub("-", "", as.character(allimfolds[1]))
+end <- gsub("-", "", as.character(allimfolds[length(allimfolds)]))
+
 
 #################Copy shape files to relevant QA folders########################
 setwd(shpdir)
 
 shpfiles <- list.files(pattern = "*.shp")
+shpfiles <- shpfiles[!grepl("xml", shpfiles)]
 shpnames <- unlist(strsplit(shpfiles, split = "\\."))
 shpnames <- shpnames[c(TRUE,FALSE)] #this returns the odd indexes
 
 
 for(i in 1:length(shpnames)){
   shp.i <- shpnames[i]
-  shps.i <- list.files(pattern = shp.i)
+  pattern <- paste0("^", shp.i, "\\.")
+  shps.i <- list.files(pattern = pattern)
   from.i <- paste0(shpdir,"\\", shps.i)
-  to.i <- paste0(wkdir, "\\", directories[grep(shpnames[i], directories)])
+  pattern2 <- paste0(shp.i, "_")
+  to.i <- paste0(wkdir, "\\", directories[grep(pattern2, directories)])
   file.copy(from=from.i, to=to.i, recursive = FALSE, overwrite = TRUE, 
             copy.mode = TRUE)
 }
@@ -191,7 +205,8 @@ for(j in 1:length(directories)){
   results.a<-cbind(date, sat, results.a)
   shpname.i <- str_split(shp.j, "\\.")[[1]][1]
   setwd(paste0(wkdir, "\\", directories[j]))
-  write.csv(file=paste(pr,option,shpname.i, ".csv", sep="_"), x=results.a)
+  write.csv(file=paste0(pr,option,shpname.i, "_", beg, "-", end, ".csv"), 
+            x=results.a)
 }
 
 
@@ -212,9 +227,6 @@ for(l in 1:length(dpaths)){
 }
 
 
-allimfolds <- list.dirs(imdir)
-allimfolds <- as.Date(allimfolds, "%Y%m%d")
-allimfolds <- allimfolds[!is.na(allimfolds)]
 
 alldat <- data.frame(date = allimfolds)
 
@@ -222,4 +234,4 @@ for(m in 1:length(resultslist)){
   alldat <- left_join(alldat, resultslist[[m]], "date")
 }
 setwd(wkdir)
-write.csv(alldat, file = paste0(pr, "_", option, ".csv"))
+write.csv(alldat, file = paste0(pr, "_", option, "_QA_", beg, "-", end, ".csv"))

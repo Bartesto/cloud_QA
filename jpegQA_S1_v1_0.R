@@ -34,8 +34,7 @@ library(maptools)
 wkdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\clouds"
 imdir <- "W:\\usgs\\113075"
 shpdir <- paste0(wkdir, "\\", "QAshapes")
-# This directory could change needs to be cleaned - grows quickly
-tmpdir <- "C:\\Users\\barth\\AppData\\Local\\Temp\\RtmpiqxKEG\\raster"
+
 # Buffer
 buff <- 1000
 
@@ -49,19 +48,28 @@ setwd(imdir)
 
 # get everything
 allfiles <- list.files(recursive = TRUE)
+
 # get only those that end in .pre
 result <- allfiles[grepl("*pre.ers", allfiles)]
+
 # get only image date folders file paths
 result <- result[!grepl("ecw*", result)]#remove display folder
-## limit to just few folders for testing
+
+# limit to just few folders for testing
 #result <- result[1:5]
-#get just folders
+
+# get just folders
 fold <- substr(result, 1, 8)
+
+# get beginning and end dates for names
+beg <- fold[1]
+end <- fold[length(fold)]
 
 ################SHAPE FILE NAMES################################################
 setwd(shpdir)
 
 shpfiles <- list.files(pattern = "*.shp")
+shpfiles <- shpfiles[!grepl("xml", shpfiles)] #xml handler
 shpnames <- unlist(strsplit(shpfiles, split = "\\."))
 shpnames <- shpnames[c(TRUE,FALSE)] #this returns the odd indexes
 
@@ -74,7 +82,7 @@ for(i in 1:length(shpnames)){
   shp <- readOGR(dsn = shpdir, shpnames[i])
   ext <- extent(shp)
   ext <- ext + buff
-  folder <- paste0("QA_jpegs_", shpnames[i], "_", Sys.Date())
+  folder <- paste0("QA_jpegs_", shpnames[i], "_", beg, "-", end)
   if(!file.exists(folder)){ dir.create(folder)}
   outdir <- paste0(wkdir,"\\", folder)
   for(j in 1:length(result)){
@@ -94,8 +102,6 @@ for(i in 1:length(shpnames)){
     plotRGB(b, 1, 2, 3, axes = FALSE) 
     plot(shp, add = TRUE, lwd = 1, border = "green")
     dev.off()
-    tmp.list <- list.files(path = tmpdir, full.names = TRUE)
-    file.remove(tmp.list)#Dangerous be careful
   }
   
 }

@@ -111,15 +111,50 @@ for(h in 1:length(directories)){
   qadlist[[h]] <- qafolds
 }
 
+# Run check to make sure leap year folder names are correct
+leapR <- function(imdir){
+  setwd(imdir)
+  allfiles <- list.files(recursive = TRUE)
+  result <- allfiles[grepl("*pre.ers", allfiles)]
+  result <- result[!grepl("^[a-zA-Z]", result)]
+  #date for folder
+  fold <- substr(result, 1, 8)
+  fdate <- as.character(as.Date(fold, "%Y%m%d"))
+  #date for image
+  ldate <- as.character(as.Date(substr(result, 21, 26), "%d%m%y"))
+  #find mismatch
+  bad.fold.dates <- setdiff(fdate, ldate)
+  #correct the folder names and path
+  corr.fold.dates <- as.Date(bad.fold.dates, "%Y-%m-%d") - 1
+  corr.fold <- gsub("-", "", as.character(corr.fold.dates))
+  new.name <- paste0(imdir, "\\", corr.fold)
+  #old folder names and path to correct
+  bad.fold <- gsub("-", "", as.character(bad.fold.dates))
+  old.name <- paste0(imdir, "\\", bad.fold)
+  #rename folders
+  file.rename(old.name, new.name)
+  
+}
+
+leapR(imdir)
 
 for(j in 1:length(directories)){  
   setwd(paste0(wkdir, "\\", directories[j]))
   prj<-CRS(paste("+proj=utm +zone=",zone,
                  " +south +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", 
                  sep=""))
-  shp.j <- list.files(pattern = "*.shp")
-  sitesSHP <- readShapePoly(shp.j, IDvar = shp.ID, proj4string = prj)
-  namesSHP<-rownames(sitesSHP@data)#Cool. Finds row names from IDvar supplied   
+  shp.j <- strsplit(list.files(pattern = "*.shp"), split = "\\.")[[1]][1]
+  
+  ###
+  sitesSHP <- readOGR(dsn = ".", shp.j)
+  rnames <- as.character(sitesSHP@data[, shp.ID])
+  rownames(sitesSHP@data) <- rnames
+  namesSHP <- rownames(sitesSHP@data)#Cool. Finds row names from IDvar supplied 
+  
+  
+  # 
+  # sitesSHP <- readShapePoly(shp.j, IDvar = shp.ID, proj4string = prj)
+  # namesSHP<-rownames(sitesSHP@data)#Cool. Finds row names from IDvar supplied   
   
   #obtain file paths for all .pre
   good.folds <- qadlist[[j]]
@@ -203,9 +238,10 @@ for(j in 1:length(directories)){
   results.a <- as.data.frame(results.a[-1, ])
   names(results.a) <- namesSHP
   results.a<-cbind(date, sat, results.a)
-  shpname.i <- str_split(shp.j, "\\.")[[1]][1]
+  #shpname.i <- str_split(shp.j, "\\.")[[1]][1]
+  shpname.i <- shp.j
   setwd(paste0(wkdir, "\\", directories[j]))
-  write.csv(file=paste0(pr,option,shpname.i, "_", beg, "-", end, ".csv"), 
+  write.csv(file=paste0(pr,"_", option, "_", shpname.i, "_", beg, "-", end, ".csv"), 
             x=results.a)
 }
 

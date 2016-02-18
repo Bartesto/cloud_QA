@@ -31,7 +31,7 @@ library(maptools)
 
 #################INPUTS#########################################################
 ## Directories
-wkdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\clouds"
+wkdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\cloud_QA"
 imdir <- "W:\\usgs\\113075"
 shpdir <- paste0(wkdir, "\\", "QAshapes")
 
@@ -49,14 +49,16 @@ setwd(imdir)
 # get everything
 allfiles <- list.files(recursive = TRUE)
 
-# get only those that end in .pre
+# get only those that end in .pre and in date folders
 result <- allfiles[grepl("*pre.ers", allfiles)]
+ind1 <- grepl("^[[:digit:]]",result)
+result <- result[tr]
 
-# get only image date folders file paths
-result <- result[!grepl("ecw*", result)]#remove display folder
+# # get only image date folders file paths
+# result <- result[!grepl("ecw*", result)]#remove display folder
 
 # limit to just few folders for testing
-#result <- result[1:5]
+result <- result[1:3]
 
 # get just folders
 fold <- substr(result, 1, 8)

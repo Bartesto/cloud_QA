@@ -38,7 +38,7 @@ library(sp)
 
 #################INPUTS#########################################################
 ## Directories
-wkdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\clouds"
+wkdir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\cloud_QA"
 imdir <- "W:\\usgs\\113075"
 shpdir <- paste0(wkdir, "\\", "QAshapes")
 zone <- 50

@@ -1,0 +1,172 @@
+---
+title: "Using jpegR"
+author: "Bart Huntley"
+date: "10 August 2016"
+output: html_document
+---
+
+## Introduction
+jpegR is a function designed to aid in the cloud QA of imagery prior to extracting band/index values per site for analysis. It creates small jpegs of image dates per individual site for visual QA of cloud/shadow. These jpegs are saved into a site specific folder. After running this function a user will examine all jpegs in each folder and delete those that do not pass the QA check. Further processes (not in this function) will obtain the dates of those jpegs that are left and use those dates for extracting band/index values.
+
+This function is part of a processing stream. It has the option to utilise fmask cloud masks (as created from using fmaskR) to automatically filter out cloud affected sites prior to making jpegs for visual inspection. The intention is to cut down the amount of cloudy images that need to be visually checked.
+
+It also has the option to ignore fmask cloud masks (if generated) and simply create jpegs of all imagery that has been sun-corrected. Using fmaskR can take some time to create the individual cloud masks and this option has been included to increase user options. This option may also be handy when a quick look at a site for impacts (such as fire) might be required without the overhead of substantial cloud QA checks.
+
+## Technical - What happens?
+When run this function:
+
+1. Obtains some extra functions from a source script.
+
+2. Obtains a list of image folders per site to process by:
+  + 2a. running fmaskcheckR (from source) to obtain auto cloud QA'd folders
+  + 2b. running checkR to obtain all imagery folders
+  
+3. Transform shape file to projection of sun-corrected raster.
+
+4. Extract extent from individual site shape files.
+
+5. Utilising user inputs:
+  + 5a. Buffer the site shape file
+  + 5b. Extract bands from image rasters for red, green and blue channels.
+  + 5c. Crop image raster to buffered size.
+  + 5d. Perform linear stretch to image raster.
+  + 5e. Save out raster image with selected band combination, with visible site vector as appropriately named jpeg into a folder for each site.
+ 
+## Source Script
+The jpegR function calls a source script "processingFunctions.R" to preload some modular functions to handle image folder lists. A source script is a simple .R script containing multiple functions. It is called in the line beginning source("Z:\\\\...").
+
+It is intended that the source script remains in this folder as a central location whereby all users can access. If this folder is renamed or location changed the filepath to the source script needs to be updated within the jpegR function below.
+
+If the jpegR function is run and the source script is unavailable, it will fail with a "cannot open file .....no such file or directory" message.
+  
+## Load jpegR
+Run the below to load:
+```{r eval=FALSE}
+jpegR <- function(wkdir, imdir, shp, shp.ID, buff, red, green, blue, fmask){
+  setwd(wkdir)
+  source("Z:\\DOCUMENTATION\\Software\\R\\R_Scripts\\processingFunctions.R")
+  if(fmask == "y"){
+    foldsToDo <- fmaskcheckR(wkdir, imdir, shp, shp.ID)
+  } else {
+    foldsToDo <- checkR(wkdir, imdir, shp, shp.ID)
+  }
+  ## Get shp names to iterate through ##########################################
+  shpdir <- paste0(wkdir, "\\", "QAshapes")
+  shpfiles <- list.files(path = shpdir, pattern = "*.shp")
+  shpfiles <- shpfiles[!grepl("xml", shpfiles)] #xml handler
+  shpnames <- unlist(strsplit(shpfiles, split = "\\."))
+  shpnames <- shpnames[c(TRUE,FALSE)] #this returns the odd indexes
+  goodnames <- paste0("site_", shpnames)
+  
+  ## Find CRS of sample raster for reproject of shp###########################
+  setwd(paste0(imdir, "\\", foldsToDo[[1]][1]))
+  testD <- list.files(pattern = "*pre.ers")
+  testD <- testD[!grepl("xml", testD)] #xml handler
+  proj <- crs(raster(testD))
+  
+  ## Create combo variable #####################################################
+  combo <- paste0(red, green, blue)
+  
+  for(i in 1:length(shpnames)){
+    setwd(wkdir)
+    shp <- readOGR(dsn = shpdir, shpnames[i])
+    shp_t <- spTransform(shp, proj)
+    ext <- extent(shp_t)
+    ext <- ext + buff
+    beg <- foldsToDo[[i]][1]
+    end <- foldsToDo[[i]][length(foldsToDo[[i]])]
+    folder <- paste0("QA_jpegs_", goodnames[i], "_", beg, "-", end)
+    if(!file.exists(folder)){ dir.create(folder)}
+    outdir <- paste0(wkdir,"\\", folder)
+    
+    for(j in 1:length(foldsToDo[[i]])){
+      setwd(paste0(imdir, "\\", foldsToDo[[i]][j]))
+      f <- list.files(pattern = '*pre.ers')
+      date <- as.Date(substring(f, 12, 17),"%d%m%y")
+      jname <- paste0(date, "-", combo, ".jpeg")
+      fname <- paste0(wkdir, "\\", folder, "\\", jname)
+      br <- raster(f, band = red)
+      br <- crop(br, ext)
+      br <- stretch(br)
+      bg <- raster(f, band = green)
+      bg <- crop(bg, ext)
+      bg <- stretch(bg)
+      bb <- raster(f, band = blue)
+      bb <- crop(bb, ext)
+      bb <- stretch(bb)
+      b <- brick(br, bg, bb)
+      jpeg(filename = fname, width = 842, height = 870)
+      plotRGB(b, 1, 2, 3, axes = FALSE) 
+      plot(shp_t, add = TRUE, lwd = 2, border = "green")
+      dev.off()
+    }
+
+    
+}
+}
+```
+
+## Set up parameters
+
+#### wkdir
+This is the location of your shape file that contains all the individual sites for analysis. An example might be (note double backslash):
+```{r eval=FALSE}
+wkdir = "Z:\\project_blah_blah\\working\\analysis"
+```
+
+#### imdir
+This is the location of the USGS Landsat scene path/row that you wish to process. An example might be (note double backslash):
+```{r eval=FALSE}
+imdir = "W:\\usgs\\112082"
+```
+
+#### shp
+This is the name of your shape file that contains all the sites and is located in the working directory. For example (**note no file extension**):
+```{r eval=FALSE}
+shp = "BartsSites"
+```
+
+#### shp.ID
+This is the name of the attribute column in your shape file that contains all the sites unique IDs. For example:
+```{r eval=FALSE}
+shp.ID = "unique_id"
+```
+
+#### buff
+This is the amount you wish to buffer out the site vector by (in metres) to be able to visualise the site within the landscape to be able to detect cloud/shadow. For example:
+```{r eval=FALSE}
+buff = 2000
+```
+
+#### red
+The satellite band you want to display in red channel. For example:
+```{r eval=FALSE}
+red = 5
+```
+
+#### green
+The satellite band you want to display in green channel. For example:
+```{r eval=FALSE}
+green = 4
+```
+
+#### blue
+The satellite band you want to display in blue channel. For example:
+```{r eval=FALSE}
+blue = 2
+```
+
+
+#### fmask
+A "y" or "n" to indicate whether or not to perform an automated cloud detection filter utilising previously created cloud masks from the fmaskR function to generate the image folders list. Choosing "y" when no ...cloud.img masks are present in the image folders will cause the function to fail. Ensure "n" is chosen if you don't have ...cloud.img layers or you want a quicker result but more cloudy images to visually QA.
+```{r eval=FALSE}
+fmask = "y"
+```
+
+
+## Running jpegR
+Simple matter of:
+```{r eval=FALSE}
+jpegR(wkdir, imdir, shp, shp.ID, buff, red, green, blue, fmask)
+```
+

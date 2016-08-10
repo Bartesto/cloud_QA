@@ -1,0 +1,147 @@
+---
+title: "Using checkR"
+author: "Bart Huntley"
+date: "10 August 2016"
+output: html_document
+---
+
+## Introduction
+The function checkR is a helper function designed to iterate through each imagery folder and check if a sun-corrected image exists and then records the image folder name in a list for that particular site. The function collates these folder names for each site and stores them in a list for input in the jpegR function.
+
+This function was written to be an included option in the jpegR function which produces jpegs of scene dates per site for visual QA for cloud.
+
+This function has been included in the "processingFunctions.R" source script  but can also stand alone as it outputs the collated list to an RData file named "DateSiteList.RData". This RData file can be imported using the load() command and manipulated for other purposes if required.
+
+## Technical - What happens?
+When run this function iterates through each scene date in a path/row and:
+
+1. Creates a QAshapes folder in a working directory.
+
+2. Ensures leap year folders are correctly named before proceeding.
+
+3. Splits shape files into single site shapes and stores them in QAshapes folder.
+
+4. Searches each imagery folder for a sun-corrected image.
+
+5. Builds a list of all image date folders to pass on to jpegR function.
+
+6. Outputs a copy as an RData file to working directory.
+
+## Load checkR
+Run the below to load:
+```{r eval=FALSE}
+checkR <- function(wkdir, imdir, shp, shp.ID){
+  ## Create QAshapes working folder for shapefiles #############################
+  setwd(wkdir)
+  if(!file.exists("QAshapes")){ dir.create("QAshapes")}
+  shpdir <- paste0(wkdir, "\\", "QAshapes")
+  
+  
+  ## libraries #################################################################
+  library(raster)
+  library(rgdal)
+  library(maptools)
+  
+  ## QA leap file folders for correct date #####################################
+  leapR <- function(imdir){
+    setwd(imdir)
+    allfiles <- list.files(recursive = TRUE)
+    result <- allfiles[grepl("*pre.ers", allfiles)]
+    result <- result[!grepl("^[a-zA-Z]", result)]
+    #date for folder
+    fold <- substr(result, 1, 8)
+    fdate <- as.character(as.Date(fold, "%Y%m%d"))
+    #date for image
+    ldate <- as.character(as.Date(substr(result, 21, 26), "%d%m%y"))
+    #find mismatch
+    bad.fold.dates <- setdiff(fdate, ldate)
+    #correct the folder names and path
+    corr.fold.dates <- as.Date(bad.fold.dates, "%Y-%m-%d") - 1
+    corr.fold <- gsub("-", "", as.character(corr.fold.dates))
+    new.name <- paste0(imdir, "\\", corr.fold)
+    #old folder names and path to correct
+    bad.fold <- gsub("-", "", as.character(bad.fold.dates))
+    old.name <- paste0(imdir, "\\", bad.fold)
+    #rename folders
+    file.rename(old.name, new.name)
+  }
+  
+  leapR(imdir)
+  
+  
+  ## Handle shape file to single parts (sites) #################################
+  shpSplitR <- function(wkdir, shpdir, shp, shp.ID){
+    setwd(wkdir)
+    data <-  readOGR(dsn = ".", shp)
+    unique <- unique(data@data[,shp.ID])
+    sites <- as.character(unique)
+    setwd(shpdir)
+    for(i in 1:length(sites)){
+      tmp <- data[data@data[,shp.ID] == sites[i], ]
+      writeOGR(tmp, dsn=getwd(), sites[i], driver="ESRI Shapefile",
+               overwrite_layer=TRUE)
+    }
+  }
+  
+  shpSplitR(wkdir, shpdir, shp, shp.ID)
+  
+  
+  ## Get shp names to iterate through ##########################################
+  shpfiles <- list.files(path = shpdir, pattern = "*.shp")
+  shpfiles <- shpfiles[!grepl("xml", shpfiles)] #xml handler
+  shpnames <- unlist(strsplit(shpfiles, split = "\\."))
+  shpnames <- shpnames[c(TRUE,FALSE)] #this returns the odd indexes
+  
+  ## Build empty list as long as number of sites ###############################
+  DateSiteList <- vector("list", length(shpnames))
+  goodnames <- paste0("site_", shpnames, "_dates")
+  names(DateSiteList) <- goodnames
+  
+  ## Get all folders with imagery ##############################################
+  allfiles <- list.files(path = imdir, pattern = "*pre.ers", recursive = TRUE)
+  
+  ## Get only those that end in .pre and in date folders #######################
+  ind <- grepl("^[[:digit:]]", allfiles)
+  allfiles <- allfiles[ind]
+  allFolds <- substr(allfiles, 1, 8)
+  for(i in 1:length(shpnames)){
+    DateSiteList[[i]] <- allFolds
+  }
+  setwd(wkdir)
+  save(DateSiteList, file = "DateSiteList.RData")
+  return(DateSiteList)
+}
+```
+
+## Set up parameters
+
+#### wkdir
+This is the location of your shape file that contains all the individual sites for analysis. An example might be (note double backslash):
+```{r eval=FALSE}
+wkdir = "Z:\\project_blah_blah\\working\\analysis"
+```
+
+#### imdir
+This is the location of the USGS Landsat scene path/row that you wish to process. An example might be (note double backslash):
+```{r eval=FALSE}
+imdir = "W:\\usgs\\112082"
+```
+
+#### shp
+This is the name of your shape file that contains all the sites and is located in the working directory. For example (**note no file extension**):
+```{r eval=FALSE}
+shp = "BartsSites"
+```
+
+#### shp.ID
+This is the name of the attribute column in your shape file that contains all the sites unique IDs. For example:
+```{r eval=FALSE}
+shp.ID = "unique_id"
+```
+
+
+## Running checkR
+Simple matter of:
+```{r eval=FALSE}
+checkR(wkdir, imdir, shp, shp.ID)
+```

@@ -44,12 +44,20 @@ Run the below to load:
 ```{r eval=FALSE}
 jpegR <- function(wkdir, imdir, shp, shp.ID, buff, red, green, blue, fmask){
   setwd(wkdir)
-  source("Z:\\DOCUMENTATION\\Software\\R\\R_Scripts\\processingFunctions.R")
+  source("Z:\\DOCUMENTATION\\Software\\R\\R_Scripts\\cloudQA_extract\\processingFunctions.R")
+  
+  ## libraries #################################################################
+  library(raster)
+  library(rgdal)
+  library(maptools)
+  
+  ## Get correct list of data ##################################################
   if(fmask == "y"){
     foldsToDo <- fmaskcheckR(wkdir, imdir, shp, shp.ID)
   } else {
     foldsToDo <- checkR(wkdir, imdir, shp, shp.ID)
   }
+  
   ## Get shp names to iterate through ##########################################
   shpdir <- paste0(wkdir, "\\", "QAshapes")
   shpfiles <- list.files(path = shpdir, pattern = "*.shp")

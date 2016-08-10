@@ -6,7 +6,7 @@
 # 2. ensures leap year folders are correctly named
 # 3. splits shp files into single site shapes
 # 4. builds a list of image date folders to pass on to jpegR function
-#   4a. checkR performs not auto cloud detection and returns all available 
+#   4a. checkR does not perform auto cloud detection and returns all available 
 #       imagery folders
 # 5. also outputs "DateSiteList" RData file
 #
@@ -22,6 +22,9 @@
 # as an alternate option to creating fmask cloud masks and allowing purely 
 # visual QA of all imagery per site. Could be important if fmask cloud masks 
 # contain type 1 or type 2 errors.
+#
+# this function is contained in the source file "processingFunctions.R" for use 
+# in the jpegR function.
 #
 # see html doco for more details
 #

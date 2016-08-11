@@ -1,17 +1,40 @@
 ################################################################################
 # extractR
+#
+# Function:
+# 1. copies individual site shape files to QA jpeg folders
+# 2. obtains dates of remaining jpegs in QA folders
+# 3. uses dates from 2. to extract data for each site shape file
+# 4. writes results of 3. to a .csv file within each QA folder
+# 5. combines all individual site extracts into one .csv with NA's indicating
+#    data removed due to cloud or complete striping.
+#
+# parameters
+# wkdir - working directory where your shp file is located
+# imdir - directory where imagery is located to path/row level
+# shp - shp file name with no extension
+# shp.ID - attribute field of shp file that contains unique site IDs
+# option - choice for extracted values. One of "i35", "ndvi", "b1", "b2", "b3", 
+#          "b4", "b5", "b6".
+# addsen - should sensor designator be added to final csv output, "y" or "n".
+#
+# NOTE: adding sensor to final csv adds a column and thereby may disrupt
+# downstream analysis where correct columns have been indexed by number not 
+# name. Leave as "n" if unsure or make sure other analysis is drawing from 
+# correct columns
+#
+# usage
+# the intention is to run jpegR prior to extractR. jpegR will create QA folders 
+# of jpegs. These need to be edited for cloudy images (delete cloud affected 
+# jpegs) prior to using extractR. extractR will then based on the dates of jpegs 
+# left in QA folders, extract desired band/index values for each site. Results 
+# are output to csv per site and saved to individual QA folders, then combined 
+# in one csv, saved to working directory.
+#
 
-wkdir <- "C:\\temp\\R_development\\wkdir"
-imdir <- "C:\\temp\\R_development\\imdir"
-shp <- "site_test" ##No .shp suffix
-shp.ID <- "id"
-option <- "i35"
-addsen <- "n"
 
 
-
-
-extractR <- function(wkdir, imdir, shp, shp.ID, option, addsen){
+extractR <- function(wkdir, imdir, shp, shp.ID, option, addsen = "n"){
   
   ## fp for shp folder #########################################################
   shpdir <- paste0(wkdir, "\\", "QAshapes")
@@ -217,10 +240,10 @@ extractR <- function(wkdir, imdir, shp, shp.ID, option, addsen){
   
   
   ## combine all data into 1 csv
-  if(addsen == "y"){
-    alldat <- data.frame(date = allimfolds, sensor = allsats)
-  } else {
+  if(addsen == "n"){
     alldat <- data.frame(date = allimfolds)
+  } else {
+    alldat <- data.frame(date = allimfolds, sensor = allsats)
   }
   
   for(m in 1:length(resultslist)){

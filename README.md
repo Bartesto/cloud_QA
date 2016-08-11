@@ -28,7 +28,7 @@ This function obtains the dates of the left over jpegs, deems these as QA'd for 
 
 See Using "extractR.Rmd" for full details and usage.
 
-***checkR.R*** and ***fmaskcheckR.R" are both helper functions written to be included in jpegR.R. In perhaps a moment of madness (remains to be seen) these have been put into "processingFunctions.R" source script which is called from within jpegR.R. Overcomplification? Perhaps but development was occuring quickly and I didn't want to start having to update little functions present in larger functions with small changes and bug fixes.
+***checkR.R*** and ***fmaskcheckR.R*** are both helper functions written to be included in jpegR.R. In perhaps a moment of madness (remains to be seen) these have been put into "processingFunctions.R" source script which is called from within jpegR.R. Overcomplification? Perhaps but development was occuring quickly and I didn't want to start having to update little functions present in larger functions with small changes and bug fixes.
 
 ***leapRfn.R*** and ***shpSplitRfn.R*** are also small helper functions but were not included into the source script.
 

@@ -25,6 +25,8 @@
 #
 # Bart Huntley
 
+# SUPERSEDED see extractR
+
 
 rm(list=ls())
 

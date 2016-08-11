@@ -27,7 +27,6 @@
 
 # SUPERSEDED see extractR
 
-
 rm(list=ls())
 
 library(raster)
